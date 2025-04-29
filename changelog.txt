@@ -1,0 +1,29 @@
+---------------------------------------------------------------------------------------------------
+Version: 20.0.1
+Date: 2024-11-24
+  Bugfixes:
+    - Fixed a desync when connecting while tiles were processing.
+---------------------------------------------------------------------------------------------------
+Version: 20.0.0
+Date: 2024-10-28
+  Features:
+    - Updated to Factorio version 2.0
+    - Removes ghosts if they would upgrade to the existing tile.
+---------------------------------------------------------------------------------------------------
+Version: 19.0.0
+Date: 2020-12-07
+  Features:
+    - Updated to Factorio version 1.1
+---------------------------------------------------------------------------------------------------
+Version: 18.1.0
+Date: 2020-12-07
+  Features:
+    - Upgrades tile ghosts similar to how the upgrade planner upgrades entity ghosts.
+  Bugfixes:
+    - Ignores tiles that overlap with existing ghosts, preventing duplicate ghosts.
+    - Properly tracks the settings of individual planners instead of all secretly being the same planner.
+---------------------------------------------------------------------------------------------------
+Version: 18.0.0
+Date: 2020-07-03
+  Features:
+    - Adds an upgrade planner that upgrades tiles.
