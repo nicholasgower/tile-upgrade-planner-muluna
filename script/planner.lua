@@ -77,17 +77,19 @@ end
 local function selected_area(event, reverse)
     local player = game.get_player(event.player_index)
     local planner = player.cursor_stack
-    if planner.valid_for_read and planner.name == shared.names.planner then
-        local filters = util.copy(storage.planner[planner.item_number])
-        if reverse then
-            for _,v in pairs(filters) do
-                v.source, v.target = v.target, v.source
+    if planner then
+        if planner.valid_for_read and planner.name == shared.names.planner then
+            local filters = util.copy(storage.planner[planner.item_number])
+            if reverse then
+                for _,v in pairs(filters) do
+                    v.source, v.target = v.target, v.source
+                end
             end
-        end
-        if area_size(event.area) > 1000 then
-            enqueue_area(event.player_index, event.surface.index, event.area, get_filters(filters))
-        else
-            upgrade_area(event.player_index, event.surface.index, event.area, get_filters(filters))
+            if area_size(event.area) > 1000 then
+                enqueue_area(event.player_index, event.surface.index, event.area, get_filters(filters))
+            else
+                upgrade_area(event.player_index, event.surface.index, event.area, get_filters(filters))
+            end
         end
     end
 end
