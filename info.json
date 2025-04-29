@@ -1,10 +1,12 @@
 {
-	"name": "tile-upgrade-planner-muluna",
-	"version": "20.0.1",
-	"factorio_version": "2.0",
-	"title": "Tile Upgrade Planner",
-	"author": "calcwizard,MeteorSwarm",
-	"homepage": "",
-	"dependencies": ["base"],
-	"description": "Adds an upgrade planner that can be used to upgrade tiles. Fork designed to work with \"Muluna, Moon of Nauvis.\""
+  "name": "tile-upgrade-planner-muluna",
+  "version": "1.0.0",
+  "factorio_version": "2.0",
+  "title": "Tile Upgrade Planner",
+  "author": "calcwizard,MeteorSwarm",
+  "homepage": "",
+  "dependencies": [
+    "base"
+  ],
+  "description": "Adds an upgrade planner that can be used to upgrade tiles. Fork designed to work with \"Muluna, Moon of Nauvis.\""
 }
