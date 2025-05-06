@@ -6,7 +6,8 @@
   "author": "calcwizard, MeteorSwarm",
   "homepage": "",
   "dependencies": [
-    "base"
+    "base",
+    "! tile-upgrade-planner"
   ],
   "description": "Adds an upgrade planner that can be used to upgrade tiles. Fork designed to work with \"Muluna, Moon of Nauvis.\""
 }
