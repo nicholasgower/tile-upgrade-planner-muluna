@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.4
+Date: 2025-07-20
+  Optimizations:
+    - Eliminated passive performance loss and fixed issues with undo indexing. This comes at the cost of higher lag spikes when processing massive numbers of tile upgrades.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.3
 Date: 2025-05-06
   Compatibility:
