@@ -28,7 +28,7 @@ end
 
 local function enqueue_area(player_id, surface_id, area, filters)
     local queue = storage.tasks
-    local block_size = 16
+    local block_size = 1024
     for x = area.left_top.x, area.right_bottom.x, block_size do
         for y = area.left_top.y, area.right_bottom.y, block_size do
             local left_top = {x=x, y=y}
@@ -53,12 +53,14 @@ local function upgrade_area(player_id, surface_id, area, filters)
     local surface = game.get_surface(surface_id)
     local filters_inv = invert_table(filters)
     local upgrade_locations = {}
+    local item_index = 0
     for _,ghost in pairs(surface.find_entities_filtered({area=area,name="tile-ghost",force=force})) do
         local ghost_name = ghost.ghost_name
         local position = ghost.position
         if filters[ghost_name] then
             if surface.get_tile(position).name ~= filters[ghost_name] then
-                surface.create_entity{name="tile-ghost",position=position,force=force,player=player,raise_built=true,inner_name=filters[ghost_name]}
+                surface.create_entity{name="tile-ghost",position=position,force=force,player=player,item_index = item_index, raise_built=true,inner_name=filters[ghost_name]}
+                item_index = 1
             end
             ghost.destroy()
         end
@@ -69,7 +71,8 @@ local function upgrade_area(player_id, surface_id, area, filters)
         local tile_name = tile.name
         local tile_position = tile.position
         if filters[tile_name] and not upgrade_locations[tile_position.x .. "," ..tile_position.y] then
-            surface.create_entity{name="tile-ghost",position=tile_position,force=force,player=player,raise_built=true,inner_name=filters[tile_name]}
+            surface.create_entity{name="tile-ghost",position=tile_position,force=force,item_index = item_index,player=player,raise_built=true,inner_name=filters[tile_name]}
+            item_index = 1
         end
     end
 end
@@ -85,7 +88,7 @@ local function selected_area(event, reverse)
                     v.source, v.target = v.target, v.source
                 end
             end
-            if area_size(event.area) > 1000 then
+            if area_size(event.area) > 100000 then
                 enqueue_area(event.player_index, event.surface.index, event.area, get_filters(filters))
             else
                 upgrade_area(event.player_index, event.surface.index, event.area, get_filters(filters))
@@ -94,22 +97,34 @@ local function selected_area(event, reverse)
     end
 end
 
+-- local function update_tick_rate(event) 
+--     local queue = storage.tasks
+--     game.print("back = " .. queue.back)
+--     game.print("front = " .. queue.front)
+--     if queue.back - queue.front > 3  then
+--         storage.tick_wait = 1
+--     else
+--         storage.tick_wait = 240
+--     end
+--     game.print(storage.tick_wait)
+-- end
+
 local function process_queue(event)
-    local queue = storage.tasks
-    if queue[queue.front] then
-        local data = queue[queue.front]
-        if data.filters then
-            upgrade_area(data.player_id, data.surface_id, data.area, data.filters)
-        else
-            clear_area(data.player_id, data.surface_id, data.area, data.filters)
+        local queue = storage.tasks
+        if queue[queue.front] then
+            local data = queue[queue.front]
+            if data.filters then
+                upgrade_area(data.player_id, data.surface_id, data.area, data.filters)
+            else
+                clear_area(data.player_id, data.surface_id, data.area, data.filters)
+            end
+            queue[queue.front] = nil
+            queue.front = queue.front + 1
+            if queue.front >= queue.back then
+                queue.front = 1
+                queue.back = 1
+            end
         end
-        queue[queue.front] = nil
-        queue.front = queue.front + 1
-        if queue.front >= queue.back then
-            queue.front = 1
-            queue.back = 1
-        end
-    end
 end
 
 function clear_area(player_id, surface_id, area, filters)
@@ -132,4 +147,4 @@ end
 script.on_event(defines.events.on_player_selected_area, function(event) selected_area(event, false) end)
 script.on_event(defines.events.on_player_reverse_selected_area, function(event) selected_area(event, true) end)
 script.on_event(defines.events.on_player_alt_selected_area, deselected_area)
-script.on_nth_tick(1, process_queue)
+script.on_nth_tick(60, process_queue)
