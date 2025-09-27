@@ -16,10 +16,12 @@ local tile_filters = {{filter="item-to-place"}}
 end
 --]]
 
+
+
 return {
     names = {
         planner = "tile-upgrade-planner",
-        mod = "tile-upgrade-planner",
+        mod = "tile-upgrade-planner-muluna",
         add_row = "tile-upgrade-add-row",
         remove_row = "tile-upgrade-remove-row",
     },
