@@ -52,6 +52,12 @@ local function upgrade_area(player_id, surface_id, area, filters)
     local force = player.force
     local surface = game.get_surface(surface_id)
     local filters_inv = invert_table(filters)
+    for key,item in pairs(table.deepcopy(filters_inv)) do 
+        if prototypes.tile[item] == nil then
+            filters_inv[key] = nil
+        end
+    end
+
     local upgrade_locations = {}
     local item_index = 0
     for _,ghost in pairs(surface.find_entities_filtered({area=area,name="tile-ghost",force=force})) do
