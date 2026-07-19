@@ -99,5 +99,14 @@ data:extend({
     size = 64,
     scale = 0.5,
     --tint = {r=255},
+  },
+  {
+    name = "tile-upgrade-planner",
+    type = "mod-data",
+    data = {
+      
+    }
   }
 })
+
+data.raw["mod-data"]["tile-upgrade-planner"].data = shared

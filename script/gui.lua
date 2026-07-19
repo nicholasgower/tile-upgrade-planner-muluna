@@ -1,5 +1,5 @@
 local util = require("util")
-local shared = require("shared")
+local shared = prototypes.mod_data["tile-upgrade-planner"].data
 
 function verify_filters(filters)
     local output = {}

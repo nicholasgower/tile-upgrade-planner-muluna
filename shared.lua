@@ -16,9 +16,7 @@ local tile_filters = {{filter="item-to-place"}}
 end
 --]]
 
-
-
-return {
+local shared = {
     names = {
         planner = "tile-upgrade-planner",
         mod = "tile-upgrade-planner-muluna",
@@ -31,6 +29,13 @@ return {
         {source="concrete", target="refined-concrete"},
         {source="hazard-concrete-left", target="refined-hazard-concrete-left"},
         {source="hazard-concrete-right", target="refined-hazard-concrete-right"},
-        {source = "space-platform-foundation", target = "low-density-space-platform-foundation"}
+        --{source = "space-platform-foundation", target = "low-density-space-platform-foundation"} --Add this to Muluna
     },
 }
+
+
+
+--For modders, add to default mapping like this:
+-- table.insert(data.raw["mod-data"]["tile-upgrade-planner"].data.default_mapping,{source = "space-platform-foundation", target = "low-density-space-platform-foundation"})
+
+return shared

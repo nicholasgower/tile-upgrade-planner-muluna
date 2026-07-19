@@ -1,5 +1,5 @@
 
-local shared = require("shared")
+local shared = prototypes.mod_data["tile-upgrade-planner"].data
 local util = require("util")
 
 local function invert_table(tab)
