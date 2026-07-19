@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.8
+Date: 2026-07-19
+  Compatibility:
+    - Removed hardcoded references to non-vanilla tiles and exposed the shared table to other mods as a mod-data object, allowing other mods to add tiles to the default tile upgrade planner.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.7
 Date: 2026-06-23
   Compatibility:
