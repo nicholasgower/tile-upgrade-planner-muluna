@@ -116,8 +116,9 @@ end
 -- end
 
 local function process_queue(event)
-        local queue = storage.tasks
-        if queue[queue.front] then
+        
+        if storage.tasks[storage.tasks.front] then
+            local queue = storage.tasks
             local data = queue[queue.front]
             if data.filters then
                 upgrade_area(data.player_id, data.surface_id, data.area, data.filters)
