@@ -88,6 +88,9 @@ local function selected_area(event, reverse)
     local planner = player.cursor_stack
     if planner then
         if planner.valid_for_read and planner.name == shared.names.planner then
+            -- A planner that never went through open_planner (on_player_cursor_stack_changed) has no entry yet:
+            -- give it the defaults, as the GUI does, instead of passing nil to get_filters.
+            storage.planner[planner.item_number] = storage.planner[planner.item_number] or util.copy(shared.default_mapping)
             local filters = util.copy(storage.planner[planner.item_number])
             if reverse then
                 for _,v in pairs(filters) do
