@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.10
+Date: 2026-10-08
+  Bugfixes:
+    - Tile Upgrade Planners with undefined filters will have their filters set to default when filters are unknown. Thank you GreenTech-Solutions!
+---------------------------------------------------------------------------------------------------
 Version: 1.0.9
 Date: 2026-08-12
   Optimizations:
