@@ -7,6 +7,11 @@
 
 # files that should not get included in a release zip
 README.md export-ignore
+AGENTS.md export-ignore
+opencode.json export-ignore
+prompts export-ignore
+tools export-ignore
+test-mods export-ignore
 .vscode export-ignore
 .git export-ignore
 .github export-ignore

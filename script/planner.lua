@@ -1,6 +1,7 @@
-
 local shared = prototypes.mod_data["tile-upgrade-planner"].data
 local util = require("util")
+
+local Public = {}
 
 local function invert_table(tab)
     local out = {}
@@ -26,7 +27,7 @@ local function area_size(area)
     return (area.right_bottom.x - area.left_top.x) * (area.right_bottom.y - area.left_top.y)
 end
 
-local function enqueue_area(player_id, surface_id, area, filters)
+local function enqueue_area(player_id, surface_id, area, filters, force_name)
     local queue = storage.tasks
     local block_size = 1024
     for x = area.left_top.x, area.right_bottom.x, block_size do
@@ -36,6 +37,7 @@ local function enqueue_area(player_id, surface_id, area, filters)
             queue[queue.back] = {
                 player_id = player_id, 
                 surface_id=surface_id, 
+                force_name = force_name,
                 area = {
                     left_top=left_top,
                     right_bottom=right_bottom,
@@ -47,10 +49,15 @@ local function enqueue_area(player_id, surface_id, area, filters)
     end
 end
 
-local function upgrade_area(player_id, surface_id, area, filters)
-    local player = game.get_player(player_id)
-    local force = player.force
-    local surface = game.get_surface(surface_id)
+---Apply a source->target tile mapping to every tile and tile ghost in an area.
+---This is the player-independent core of the planner. `force_name` on queued
+---tasks is a test-only seam; normal play resolves the force from the player.
+---@param force LuaForce
+---@param surface LuaSurface
+---@param area BoundingBox
+---@param filters table<string, string>
+---@param player? LuaPlayer
+local function upgrade_area_for_force(force, surface, area, filters, player)
     local filters_inv = invert_table(filters)
     for key,item in pairs(table.deepcopy(filters_inv)) do 
         if prototypes.tile[item] == nil then
@@ -81,6 +88,14 @@ local function upgrade_area(player_id, surface_id, area, filters)
             item_index = 1
         end
     end
+end
+
+local function upgrade_area(player_id, surface_id, area, filters)
+    local player = game.get_player(player_id)
+    if not player then
+        return
+    end
+    upgrade_area_for_force(player.force, game.get_surface(surface_id), area, filters, player)
 end
 
 local function selected_area(event, reverse)
@@ -118,15 +133,38 @@ end
 --     game.print(storage.tick_wait)
 -- end
 
+local function clear_area_for_force(force, surface, area)
+    for _,ghost in pairs(surface.find_entities_filtered{area=area,name="tile-ghost",force=force}) do
+        ghost.destroy()
+    end
+end
+
+-- Kept as a global for compatibility with older scripts that called it
+-- directly. New code should use clear_area_for_force or the player resolver.
+function clear_area(player_id, surface_id, area, filters)
+    local player = game.get_player(player_id)
+    if not player then
+        return
+    end
+    clear_area_for_force(player.force, game.get_surface(surface_id), area)
+end
+
 local function process_queue(event)
-        
-        if storage.tasks[storage.tasks.front] then
-            local queue = storage.tasks
-            local data = queue[queue.front]
-            if data.filters then
-                upgrade_area(data.player_id, data.surface_id, data.area, data.filters)
-            else
-                clear_area(data.player_id, data.surface_id, data.area, data.filters)
+        local queue = storage.tasks
+        local data = queue[queue.front]
+        if data then
+            local surface = game.get_surface(data.surface_id)
+            local player = data.player_id and game.get_player(data.player_id)
+            local force = data.force_name and game.forces[data.force_name]
+            if not force and player then
+                force = player.force
+            end
+            if surface and force then
+                if data.filters then
+                    upgrade_area_for_force(force, surface, data.area, data.filters, player)
+                else
+                    clear_area_for_force(force, surface, data.area)
+                end
             end
             queue[queue.front] = nil
             queue.front = queue.front + 1
@@ -135,15 +173,6 @@ local function process_queue(event)
                 queue.back = 1
             end
         end
-end
-
-function clear_area(player_id, surface_id, area, filters)
-    local surface = game.get_surface(surface_id)
-    local player = game.get_player(player_id)
-    local force = player.force
-    for _,ghost in pairs(surface.find_entities_filtered{area=area,name="tile-ghost",force=force}) do
-        ghost.destroy()
-    end
 end
 
 local function deselected_area(event)
@@ -158,3 +187,15 @@ script.on_event(defines.events.on_player_selected_area, function(event) selected
 script.on_event(defines.events.on_player_reverse_selected_area, function(event) selected_area(event, true) end)
 script.on_event(defines.events.on_player_alt_selected_area, deselected_area)
 script.on_nth_tick(60, process_queue)
+
+Public.invert_table = invert_table
+Public.get_filters = get_filters
+Public.area_size = area_size
+Public.enqueue_area = enqueue_area
+Public.upgrade_area_for_force = upgrade_area_for_force
+Public.upgrade_area = upgrade_area
+Public.clear_area_for_force = clear_area_for_force
+Public.clear_area = clear_area
+Public.process_queue = process_queue
+
+return Public

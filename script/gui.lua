@@ -1,6 +1,8 @@
 local util = require("util")
 local shared = prototypes.mod_data["tile-upgrade-planner"].data
 
+local Public = {}
+
 function verify_filters(filters)
     local output = {}
     local tiles = prototypes.get_tile_filtered({{filter="item-to-place"}})
@@ -16,6 +18,22 @@ function verify_filters(filters)
     return output
 end
 
+function update_label(planner, planner_number)
+    --[[
+    local planner_data = storage.planner[planner_number]
+    local label = ""
+    for k,v in pairs(planner_data) do
+        if v.source and v.target then
+            local new_line = ""
+            if label ~= "" then
+                new_line = "\n"
+            end
+            label = label .. new_line .. "[tile=" .. v.source .. "]->[tile=" .. v.target .. "]"
+        end
+    end
+    planner.label = label
+    --]]
+end
 
 function update_planner(event)
     if event.element.get_mod() ~= shared.names.mod then return end
@@ -37,25 +55,6 @@ function update_planner(event)
     end
 end
 
-
-function update_label(planner, planner_number)
-    --[[
-    local planner_data = storage.planner[planner_number]
-    local label = ""
-    for k,v in pairs(planner_data) do
-        if v.source and v.target then
-            local new_line = ""
-            if label ~= "" then
-                new_line = "\n"
-            end
-            label = label .. new_line .. "[tile=" .. v.source .. "]->[tile=" .. v.target .. "]"
-        end
-    end
-    planner.label = label
-    --]]
-end
-
-
 function save_planner(root, planner_id)
     local table = root["table"]
     if not storage.planner[planner_id] then
@@ -73,7 +72,6 @@ function save_planner(root, planner_id)
 
 end
 
-
 function add_row(root,index)
     local table = root["table"]
     if table["add-row"] then
@@ -87,7 +85,6 @@ function add_row(root,index)
 
     table.add{type="sprite-button",name="add-row",tooltip={"tile-upgrade-planner.add-row"},sprite=shared.names.add_row}
 end
-
 
 function rebuild_planner(player, table, planner_id)
     
@@ -103,11 +100,14 @@ function rebuild_planner(player, table, planner_id)
     table.add{type="sprite-button",name="add-row",tooltip={"tile-upgrade-planner.add-row"},sprite=shared.names.add_row}
 end
 
-
-function create_planner(player, table, planner_id)
+function ensure_planner(planner_id)
     storage.planner[planner_id] = storage.planner[planner_id] or util.copy(shared.default_mapping)
+    return storage.planner[planner_id]
 end
 
+function create_planner(player, table, planner_id)
+    ensure_planner(planner_id)
+end
 
 function open_planner(player, planner_id)
     local root = player.gui.left.add{type="frame",name="tile-upgrade-planner",caption={"item-name.tile-upgrade-planner"}}
@@ -125,12 +125,10 @@ function open_planner(player, planner_id)
     storage.guis[player.index] = root
 end
 
-
 function close_planner(player_index)
     storage.guis[player_index].destroy()
     storage.guis[player_index] = nil
 end
-
 
 function remove_row(event)
     local row = nil
@@ -149,7 +147,6 @@ function remove_row(event)
         end
     end
 end
-
 
 function planner_add_row(event)
     if event.element.get_mod() ~= shared.names.mod then return end
@@ -194,3 +191,18 @@ script.on_event(defines.events.on_gui_click, function(event)
         remove_row(event)
     end
 end)
+
+Public.verify_filters = verify_filters
+Public.update_planner = update_planner
+Public.update_label = update_label
+Public.save_planner = save_planner
+Public.add_row = add_row
+Public.rebuild_planner = rebuild_planner
+Public.ensure_planner = ensure_planner
+Public.create_planner = create_planner
+Public.open_planner = open_planner
+Public.close_planner = close_planner
+Public.remove_row = remove_row
+Public.planner_add_row = planner_add_row
+
+return Public

@@ -1,0 +1,231 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later WITH FUnit-CI-Exception
+#
+# Headless FUnit suite for tile-upgrade-planner-muluna.
+#
+# The suite lives in test-mods/tile-upgrade-planner-muluna-funit. This workflow
+# packages the mod (test-mods/ is export-ignored), the companion test mod and a
+# pinned FUnit revision, then runs the __funit__tile_upgrade_planner scenario in
+# the factoriotools/factorio image for two profiles: base game only, and Space
+# Age + Quality. No mod-portal credentials are needed because the mod has no
+# required external dependencies.
+#
+# The helper scripts live in .github/funit and are adapted from planet-muluna's
+# FUnit CI (see .github/funit/README.md for provenance).
+
+name: FUnit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  MOD_NAME: tile-upgrade-planner-muluna
+  TEST_MOD_NAME: tile-upgrade-planner-muluna-funit
+  TEST_MOD_DIR: test-mods/tile-upgrade-planner-muluna-funit
+  SCENARIO: __funit__tile_upgrade_planner
+  FUNIT_COMMIT: b69c2f277a467726e3a8c555d48df5b647ec5a64
+
+jobs:
+  build-archive-job:
+    name: Build test artifacts
+    runs-on: ubuntu-latest
+    container:
+      image: ruby:4-alpine
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - run: apk add --no-cache bash git jq zip
+        shell: sh
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Build archives, scenario and test config
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+          art="$GITHUB_WORKSPACE/artifacts/${MOD_NAME}"
+          mkdir -p "$art/scenarios/$SCENARIO" "$art/test"
+
+          mod_version="$(jq -r '.version' info.json)"
+          mod_folder="${MOD_NAME}_${mod_version}"
+          test_version="$(jq -r '.version' "$TEST_MOD_DIR/info.json")"
+          test_folder="${TEST_MOD_NAME}_${test_version}"
+
+          git archive --worktree-attributes --format=zip HEAD \
+            -o "$art/${mod_folder}.zip" --prefix="${mod_folder}/"
+          git archive --format=zip "HEAD:${TEST_MOD_DIR}" \
+            -o "$art/${test_folder}.zip" --prefix="${test_folder}/"
+
+          git clone --depth 1 https://gitlab.com/jfletcher94/funit.git funit-src
+          git -C funit-src fetch --depth 1 origin "$FUNIT_COMMIT"
+          git -C funit-src checkout --detach "$FUNIT_COMMIT"
+          funit_version="$(jq -r '.version' funit-src/funit/info.json)"
+          test -n "$funit_version"
+          (cd funit-src && zip -qr "$art/funit_${funit_version}.zip" funit)
+
+          cp -a "$TEST_MOD_DIR/scenarios/$SCENARIO/." "$art/scenarios/$SCENARIO/"
+          echo "$SCENARIO" > "$art/scenario_names.txt"
+          : > "$art/save_names.txt"
+
+          cat > "$art/test/server-settings.json" <<'EOF'
+          {
+            "name": "tile-upgrade-planner FUnit",
+            "description": "Headless FUnit run for tile-upgrade-planner-muluna",
+            "tags": [],
+            "max_players": 1,
+            "visibility": { "public": false, "lan": false },
+            "username": "funit",
+            "token": "",
+            "game_password": "",
+            "require_user_verification": false,
+            "allow_commands": "admins-only",
+            "autosave_interval": 0,
+            "autosave_slots": 1,
+            "afk_autokick_interval": 0,
+            "auto_pause": false,
+            "auto_pause_when_players_connect": false,
+            "only_admins_can_pause_the_game": true,
+            "autosave_only_on_server": true
+          }
+          EOF
+
+          # Missing mod-list entries default to enabled, so the base profile
+          # explicitly disables the expansion mods.
+          cat > "$art/test/mod-list-base.json" <<'EOF'
+          {
+            "mods": [
+              { "name": "base", "enabled": true },
+              { "name": "elevated-rails", "enabled": false },
+              { "name": "quality", "enabled": false },
+              { "name": "recycler", "enabled": false },
+              { "name": "space-age", "enabled": false },
+              { "name": "tile-upgrade-planner-muluna", "enabled": true },
+              { "name": "tile-upgrade-planner-muluna-funit", "enabled": true },
+              { "name": "funit", "enabled": true }
+            ]
+          }
+          EOF
+
+          cat > "$art/test/mod-list-space-age.json" <<'EOF'
+          {
+            "mods": [
+              { "name": "base", "enabled": true },
+              { "name": "elevated-rails", "enabled": true },
+              { "name": "quality", "enabled": true },
+              { "name": "recycler", "enabled": true },
+              { "name": "space-age", "enabled": true },
+              { "name": "tile-upgrade-planner-muluna", "enabled": true },
+              { "name": "tile-upgrade-planner-muluna-funit", "enabled": true },
+              { "name": "funit", "enabled": true }
+            ]
+          }
+          EOF
+
+          echo "Built artifacts:"
+          find "$art" -maxdepth 2 -type f | sort
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-archive-job
+          retention-days: 1
+          path: artifacts/
+          if-no-files-found: error
+
+  unit-test-job:
+    name: Run FUnit (${{ matrix.profile }})
+    needs: build-archive-job
+    runs-on: ubuntu-latest
+    container:
+      image: "factoriotools/factorio:latest"
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [base, space-age]
+    env:
+      PROFILE: ${{ matrix.profile }}
+      TIMEOUT: 600
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install Git
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-archive-job
+          path: artifacts
+      - name: Prepare test environment
+        run: bash .github/funit/prepare_test_environment.sh
+      - name: Select scenario mod list
+        run: |
+          set -euo pipefail
+          cp "/mod-list-${PROFILE}.json" "/factorio/scenarios/${SCENARIO}/mod-list.json"
+      - name: Run FUnit scenario
+        run: bash .github/funit/entrypoint.sh
+      - name: Collect reports
+        if: always()
+        run: |
+          mkdir -p "test_artifacts/${MOD_NAME}/${PROFILE}/reports"
+          if [ -d /factorio/script-output ]; then
+            cp -a /factorio/script-output/. "test_artifacts/${MOD_NAME}/${PROFILE}/reports/"
+          fi
+      - name: Verify the scenario produced a report
+        if: always()
+        run: |
+          set -euo pipefail
+          count="$(find "test_artifacts/${MOD_NAME}/${PROFILE}/reports" -maxdepth 1 -name 'funit-report-*.json' | wc -l)"
+          echo "Found ${count} FUnit report(s) for ${PROFILE}."
+          if [ "$count" -lt 1 ]; then
+            echo "::error::No FUnit report was produced for ${PROFILE}."
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-${{ matrix.profile }}
+          retention-days: 30
+          path: test_artifacts
+
+  parse-results-job:
+    name: Parse FUnit results
+    needs: unit-test-job
+    if: ${{ !cancelled() && needs.unit-test-job.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    container:
+      image: ruby:4-alpine
+    timeout-minutes: 30
+    steps:
+      - run: apk add --no-cache git
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: unit-test-*
+          path: test_artifacts
+          merge-multiple: true
+      - name: Convert FUnit reports to JUnit XML
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          find test_artifacts -name 'funit-report-*.json' -exec cp {} reports/ \;
+          ruby .github/funit/parse_funit_json.rb reports -o "funit-report-${MOD_NAME}.xml"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parse-results-job
+          retention-days: 30
+          path: funit-report-*.xml
