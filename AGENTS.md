@@ -43,6 +43,7 @@ locale/en/en.cfg                English localisation (only locale currently ship
 graphics/icons/                 Toolbar and GUI sprites
 test-mods/                      Development-only FUnit companion mod (never ships)
 tools/fdoc.py                   Read-only Factorio docs CLI used by the docs agents
+tools/generate-icons.sh         Reproducible icon generator (see Icon generation)
 prompts/                        Prompts for the opencode docs/test agents
 opencode.json                   Agent and permission configuration
 ```
@@ -321,6 +322,26 @@ python3 tools/fdoc.py member set_tiles
 
 The prompt in `prompts/factorio-docs.txt` points the agent at it. Trust the
 documentation over model memory; read first, then answer.
+
+## Icon generation
+
+`tools/generate-icons.sh` rebuilds every shipped icon from the base-game art:
+the light-green planner frame, the solid concrete-outline overlay (with the
+vanilla-style up arrow), the composed item/shortcut icons, and `thumbnail.png`.
+The silhouette is traced from `refined-concrete.png`; the arrow and line
+weight/colour come from the vanilla upgrade-planner line art. All tunables
+(contour pin, stroke width, green, output scale) are at the top of the script.
+
+```sh
+tools/generate-icons.sh            # regenerate in place
+tools/generate-icons.sh --preview  # also write /tmp/opencode/icon-preview.png
+CONTOUR="" tools/generate-icons.sh # re-trace the source instead of the pinned contour
+```
+
+It needs `photocraft-cli`, Python 3 with numpy/Pillow/scipy/scikit-image/
+opencv-python/shapely, and Factorio's data directory (`FACTORIO_DIR`, default
+`/opt/factorio_space_age_21`). Output is deterministic and pixel-identical to
+the committed assets; `tools/` is excluded from release zips.
 
 ## Working agreements
 
