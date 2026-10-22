@@ -135,6 +135,8 @@ real tick handlers.
 The suite covers:
 
 - selection tool, shortcut, custom input, sprite and mod-data contracts;
+- the `"mod-openable"` flag that lets Factorio pin a configured planner instance
+  to the quickbar instead of an item-type filter;
 - the default mapping and the documented cross-mod extension point;
 - Muluna's `space-platform-foundation -> low-density-space-platform-foundation`
   insertion when Muluna is active;
@@ -146,5 +148,7 @@ The suite covers:
 - large-area queue splitting, processing, clearing, reset and stale-force tasks.
 
 Player-driven paths remain manual: the cursor/GUI event handlers, row add/remove,
-open/close planner, selection input wiring, and `gvv` integration. See
-`AGENTS.md` for the full conventions and known quirks.
+open/close planner, selection input wiring, and `gvv` integration. Quickbar
+pinning is covered only at the data-contract level (the `"mod-openable"` flag);
+the actual quickbar slot type requires a player, so it is verified manually on a
+save with a character. See `AGENTS.md` for the full conventions and known quirks.

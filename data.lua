@@ -19,7 +19,7 @@ data:extend({
       },
     },
     subgroup = "tool",
-    flags = {"spawnable"},
+    flags = {"spawnable", "mod-openable"},
     order = "c[automated-construction]-c[upgrade-planner]-tile",
     stack_size = 1,
     select = {

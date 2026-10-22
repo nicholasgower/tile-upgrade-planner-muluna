@@ -83,6 +83,21 @@ The selection tool selects tiles (`tile-ghost`); alt-select removes tile ghosts.
 `data-final-fixes.lua` currently only collects tile names and does not modify any
 prototype. Its result is not used.
 
+### Quickbar pinning
+
+The selection tool must keep the `"mod-openable"` item flag. Factorio treats a
+custom `selection-tool` without that flag as a plain item in the quickbar: the
+slot becomes an item-type **filter**, so clicking it produces a new planner with
+a new `item_number` and no stored filters. With `"mod-openable"`, the quickbar
+pins the specific item instance, preserving its `item_number` (and therefore the
+filters in `storage.planner`). The `quickbar-instance` data fixture asserts the
+flag; do not remove it as "unused".
+
+The flag also enables the "Open item's GUI" control (and `on_mod_item_opened`).
+The mod does not currently handle that event, so right-clicking the item in an
+inventory/quickbar slot has no custom action. Add a handler if that affordance
+should open the planner GUI.
+
 ### Control stage
 
 `control.lua` requires `script/gui.lua` and `script/planner.lua` in that order.

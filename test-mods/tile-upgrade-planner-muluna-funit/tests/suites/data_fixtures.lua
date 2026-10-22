@@ -11,6 +11,7 @@ local PREFIX = "data/"
 local EXPECTED = {
   prototypes = {
     "selection-tool",
+    "quickbar-instance",
     "shortcut",
     "custom-input",
     "sprites",

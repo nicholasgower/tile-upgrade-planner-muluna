@@ -37,6 +37,19 @@ results.check(SUITE, "selection-tool", function()
   )
 end)
 
+results.check(SUITE, "quickbar-instance", function()
+  -- Without "mod-openable", Factorio treats a custom selection-tool as a plain
+  -- item in the quickbar: the slot becomes an item-type filter and clicking it
+  -- produces a new planner with no stored filters. With the flag, the quickbar
+  -- pins the specific item instance, so its item_number (and stored filters)
+  -- are preserved. This is engine behaviour, not a mod API.
+  local tool = data.raw["selection-tool"][PLANNER]
+  assert(
+    tool.flags and contains(tool.flags, "mod-openable"),
+    "selection tool must have the 'mod-openable' flag so the quickbar pins a configured planner instance"
+  )
+end)
+
 results.check(SUITE, "shortcut", function()
   local shortcut = data.raw["shortcut"][PLANNER]
   assert(shortcut, "shortcut '" .. PLANNER .. "' is missing")
