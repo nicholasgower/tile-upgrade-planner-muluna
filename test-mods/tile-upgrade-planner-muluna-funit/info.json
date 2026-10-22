@@ -1,0 +1,16 @@
+{
+  "name": "tile-upgrade-planner-muluna-funit",
+  "version": "0.0.1",
+  "title": "Tile Upgrade Planner FUnit test suite",
+  "author": "MeteorSwarm",
+  "description": "Development-only FUnit fixtures and scenario for tile-upgrade-planner-muluna. Not shipped with the mod.",
+  "factorio_version": "2.1",
+  "dependencies": [
+    "base",
+    "? space-age",
+    "? quality",
+    "tile-upgrade-planner-muluna",
+    "? planet-muluna",
+    "funit"
+  ]
+}

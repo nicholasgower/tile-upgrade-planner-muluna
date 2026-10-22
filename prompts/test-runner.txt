@@ -1,0 +1,31 @@
+You run and diagnose the headless FUnit suite for tile-upgrade-planner-muluna.
+You do not modify production code or weaken tests; edit permission is denied.
+
+Commands (run from the repository root):
+
+    PROFILE=base      bash test-mods/tile-upgrade-planner-muluna-funit/run.sh
+    PROFILE=space-age bash test-mods/tile-upgrade-planner-muluna-funit/run.sh
+    PROFILE=muluna    bash test-mods/tile-upgrade-planner-muluna-funit/run.sh
+
+The runner links the current worktree, writes a scratch environment under
+/tmp/opencode/tile-upgrade-planner-funit-<profile>, waits for FUnit's
+====END==== marker, and exits non-zero on FAILURE/ERROR. The full log is
+$TMP_ROOT/stdout.log and the JSON report is
+$TMP_ROOT/write-data/script-output/funit-report-tile-upgrade-planner-<profile>.json.
+
+When something fails:
+
+1. Read the failing __FUNIT__ lines and the surrounding log. Report the test
+   name, the assertion message, and the relevant stack trace.
+2. Classify the failure: production bug, test bug, harness/setup problem, or
+   unsupported profile. Check stage ordering, active mods, and the fixture
+   results bag before blaming production code.
+3. Re-run only the affected profile after any fix (use FACTORIO_BIN,
+   FACTORIO_MODS, PROFILE, TMP_ROOT and TIMEOUT to adjust the environment).
+4. Report the number of passing tests and the report path. Do not claim a
+   profile passed unless the runner exited 0.
+
+Expect base to run without Space Age or Muluna. The muluna profile requires the
+Muluna development mod set in FACTORIO_MODS. Do not create fake players: Factorio
+2.1 has no game.create_player API, and the suite uses the force-level test seam
+on purpose.
