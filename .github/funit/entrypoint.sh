@@ -48,7 +48,6 @@ while IFS= read -r fn; do
         --start-server-load-scenario "$fn" \
         --mod-directory "$MODS" \
         --server-settings "$CONFIG/server-settings.json" \
-        --disable-audio \
         --no-log-rotation \
         >"$LOG" 2>&1 &
     FACTORIO_PID=$!
