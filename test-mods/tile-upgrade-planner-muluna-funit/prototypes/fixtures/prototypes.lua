@@ -37,6 +37,31 @@ results.check(SUITE, "selection-tool", function()
   )
 end)
 
+results.check(SUITE, "icons", function()
+  local icon_root = "__" .. data.raw["mod-data"][PLANNER].data.names.mod .. "__/graphics/icons/"
+  local tool = data.raw["selection-tool"][PLANNER]
+  assert(tool.icons[1].icon == icon_root .. "tile-upgrade-planner-frame.png", "item icon background is not the mod frame")
+  assert(
+    tool.icons[2].icon == icon_root .. "tile-upgrade-planner-outline.png",
+    "item icon overlay is not the mod concrete outline"
+  )
+  assert(tool.icons[1].icon_size == 64 and tool.icons[2].icon_size == 64, "item icon layers must be 64px icons")
+
+  local shortcut = data.raw["shortcut"][PLANNER]
+  assert(
+    shortcut.icons[1].icon == icon_root .. "shortcut-toolbar/tile-upgrade-planner-x64.png",
+    "shortcut icon is not the mod x64 icon"
+  )
+  assert(
+    shortcut.small_icons[1].icon == icon_root .. "shortcut-toolbar/tile-upgrade-planner-x24.png",
+    "shortcut small icon is not the mod x24 icon"
+  )
+  assert(
+    shortcut.disabled_small_icon.filename == icon_root .. "shortcut-toolbar/tile-upgrade-planner-x24-white.png",
+    "shortcut disabled small icon is not the mod x24 white icon"
+  )
+end)
+
 results.check(SUITE, "quickbar-instance", function()
   -- Without "mod-openable", Factorio treats a custom selection-tool as a plain
   -- item in the quickbar: the slot becomes an item-type filter and clicking it

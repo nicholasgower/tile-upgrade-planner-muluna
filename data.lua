@@ -7,15 +7,13 @@ data:extend({
     type = "selection-tool",
     icons = {
       {
-        icon = "__base__/graphics/icons/upgrade-planner.png",
-        icon_size = 64, 
-        icon_mipmaps = 4,
+        icon = "__tile-upgrade-planner-muluna__/graphics/icons/tile-upgrade-planner-frame.png",
+        icon_size = 64,
       },
       {
-        icon = "__base__/graphics/icons/refined-concrete.png",
-        icon_size = 64, 
-        icon_mipmaps = 4,
-        scale = 0.25,
+        icon = "__tile-upgrade-planner-muluna__/graphics/icons/tile-upgrade-planner-outline.png",
+        icon_size = 64,
+        scale = 0.65,
       },
     },
     subgroup = "tool",
@@ -51,30 +49,24 @@ data:extend({
     unavailable_until_unlocked = false,
     icons = {
       {
-        icon = "__base__/graphics/icons/refined-concrete.png",
+        icon = "__tile-upgrade-planner-muluna__/graphics/icons/shortcut-toolbar/tile-upgrade-planner-x64.png",
         priority = "extra-high-no-scale",
         icon_size = 64,
-        scale = 0.25,
-        mipmap_count = 4,
         flags = {"gui-icon"}
       },
     },
     small_icons = {
       {
-        icon = "__base__/graphics/icons/shortcut-toolbar/mip/new-upgrade-planner-x24.png",
+        icon = "__tile-upgrade-planner-muluna__/graphics/icons/shortcut-toolbar/tile-upgrade-planner-x24.png",
         priority = "extra-high-no-scale",
         icon_size = 24,
-        scale = 0.5,
-        mipmap_count = 2,
         flags = {"gui-icon"}
       }
     },
     disabled_small_icon = {
-      filename = "__base__/graphics/icons/shortcut-toolbar/mip/new-upgrade-planner-x24-white.png",
+      filename = "__tile-upgrade-planner-muluna__/graphics/icons/shortcut-toolbar/tile-upgrade-planner-x24-white.png",
       priority = "extra-high-no-scale",
       size = 24,
-      scale = 0.5,
-      mipmap_count = 2,
       flags = {"gui-icon"}
     },
   },
