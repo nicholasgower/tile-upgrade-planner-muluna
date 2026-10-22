@@ -326,11 +326,12 @@ documentation over model memory; read first, then answer.
 ## Icon generation
 
 `tools/generate-icons.sh` rebuilds every shipped icon from the base-game art:
-the light-green planner frame, the solid concrete-outline overlay (with the
-vanilla-style up arrow), the composed item/shortcut icons, and `thumbnail.png`.
-The silhouette is traced from `refined-concrete.png`; the arrow and line
-weight/colour come from the vanilla upgrade-planner line art. All tunables
-(contour pin, stroke width, green, output scale) are at the top of the script.
+the light-green planner frame, the solid concrete-outline item overlay (with
+the vanilla-style up arrow), the abstract dashed-square shortcut icons, and
+`thumbnail.png`. The silhouette is traced from `refined-concrete.png`; the
+arrow and line weight/colour come from the vanilla upgrade-planner line art.
+All tunables (contour pin, stroke width, frame white point, output scale) are
+at the top of the script.
 
 ```sh
 tools/generate-icons.sh            # regenerate in place

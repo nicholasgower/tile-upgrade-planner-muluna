@@ -13,7 +13,7 @@ data:extend({
       {
         icon = "__tile-upgrade-planner-muluna__/graphics/icons/tile-upgrade-planner-outline.png",
         icon_size = 64,
-        scale = 0.875,
+        scale = 0.65,
       },
     },
     subgroup = "tool",

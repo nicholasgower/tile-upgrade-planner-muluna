@@ -16,8 +16,8 @@
 #   1. geometry: traces the concrete silhouette from the alpha channel of
 #      refined-concrete.png frame 0 (gaussian smoothing + sub-pixel marching
 #      squares + Douglas-Peucker) and writes photocraft `path.set` payloads for
-#      the solid outline band, the arrow, the x24 frame border and the x24
-#      white-stencil knockout.
+#      the solid outline band, the arrow, and the abstract dashed-square
+#      shortcut glyph.
 #   2. raster: photocraft-cli renders those paths into new/existing documents
 #      and applies the frame recolour (Image > Adjustments > Levels, white
 #      point 204) and the 64 -> 144 thumbnail upscale.
@@ -48,8 +48,9 @@
 #     CONTOUR to pin the silhouette (space-separated "x,y" pairs, 64 px frame
 #     coordinates) for byte-exact, library-independent output; the set that
 #     ships in this repo is the default value below.
-#   - The x24 glyph is deliberately a simplified 8-vertex redraw (a 1:1
-#     downscale of the 64 px art is unreadable at 24 px).
+#   - The shortcut glyph is deliberately abstract (a dashed square and arrow,
+#     like the vanilla upgrade planner) and the x24 version is redrawn on the
+#     24 px grid instead of downscaled.
 #
 set -euo pipefail
 
@@ -72,17 +73,13 @@ DEFAULT_CONTOUR="15.0,59.29 13.71,58.0 3.63,35.0 3.89,14.0 12.0,11.45 14.36,7.0 
 CONTOUR="${CONTOUR:-$DEFAULT_CONTOUR}"
 SIGMA="${SIGMA:-0.9}"             # gaussian pre-blur before tracing
 DP_EPS="${DP_EPS:-0.45}"          # Douglas-Peucker tolerance, 64 px outline
-DP_EPS_24="${DP_EPS_24:-2.6}"     # ... for the 24 px redraw
 INK_SPAN="${INK_SPAN:-58}"        # visible ink span of the 64 px outline
 STROKE="${STROKE:-4}"             # outline stroke width, px
-INNER_SCALE="${INNER_SCALE:-0.875}"   # outline scale inside the frame
+INNER_SCALE="${INNER_SCALE:-0.65}"    # outline scale inside the frame
 THUMB_SCALE="${THUMB_SCALE:-1.5}"     # outline scale on the thumbnail
-X24_BOX="${X24_BOX:-4,4,20,20}"   # x24 silhouette box
 
 # --- colours ----------------------------------------------------------------
 LINE_COLOR="${LINE_COLOR:-#e2e2e2}"       # vanilla line-art grey
-GREEN_FILL="${GREEN_FILL:-#10b810}"       # recoloured planner green
-GREEN_EDGE="${GREEN_EDGE:-#8ce88c}"       # x24 dashed border
 LEVELS_WHITE="${LEVELS_WHITE:-204}"       # frame recolour: 255/1.25
 
 # --- misc -------------------------------------------------------------------
@@ -139,9 +136,9 @@ echo "work    : $WORK_DIR"
 # 1. geometry -> photocraft path payloads
 # ---------------------------------------------------------------------------
 CONCRETE="$CONCRETE" WORK_DIR="$WORK_DIR" CONTOUR="$CONTOUR" \
-SIGMA="$SIGMA" DP_EPS="$DP_EPS" DP_EPS_24="$DP_EPS_24" \
+SIGMA="$SIGMA" DP_EPS="$DP_EPS" \
 INK_SPAN="$INK_SPAN" STROKE="$STROKE" \
-INNER_SCALE="$INNER_SCALE" THUMB_SCALE="$THUMB_SCALE" X24_BOX="$X24_BOX" \
+INNER_SCALE="$INNER_SCALE" THUMB_SCALE="$THUMB_SCALE" \
 python3 - <<'PY'
 import json, os
 
@@ -156,12 +153,10 @@ OUT = os.environ["WORK_DIR"]
 SRC = os.environ["CONCRETE"]
 SIGMA = float(os.environ["SIGMA"])
 DP_EPS = float(os.environ["DP_EPS"])
-DP_EPS_24 = float(os.environ["DP_EPS_24"])
 INK_SPAN = float(os.environ["INK_SPAN"])
 STROKE = float(os.environ["STROKE"])
 INNER = float(os.environ["INNER_SCALE"])
 THUMB = float(os.environ["THUMB_SCALE"])
-BOX24 = [float(v) for v in os.environ["X24_BOX"].split(",")]
 
 CANVAS = 64.0
 CENTER = CANVAS / 2.0
@@ -226,10 +221,25 @@ def arrow(scale=1.0):
 
 
 def small_arrow():
-    """Hand-tuned arrow for the 24 px grid."""
-    ax, ay, hw, base, shw, bot = 12.0, 7.0, 4.2, 11.8, 2.2, 16.8
-    return [(ax, ay), (ax + hw, base), (ax + shw, base), (ax + shw, bot),
-            (ax - shw, bot), (ax - shw, base), (ax - hw, base)]
+    """Vanilla-style arrow for the 24 px shortcut grid."""
+    return [(12.0, 6.0), (17.0, 11.0), (14.0, 11.0), (14.0, 18.0),
+            (10.0, 18.0), (10.0, 11.0), (7.0, 11.0)]
+
+
+def dashed_square(canvas, thickness, dash, period):
+    """Dashed border strips on the canvas edge, like the vanilla shortcut."""
+    subs = []
+    start = 0.0
+    while start < canvas:
+        end = min(start + dash, canvas)
+        subs += [
+            rect(start, 0, end, thickness),
+            rect(start, canvas - thickness, end, canvas),
+            rect(0, start, thickness, end),
+            rect(canvas - thickness, start, canvas, end),
+        ]
+        start += period
+    return subs
 
 
 def arrow_sub(points, op="combine"):
@@ -253,21 +263,6 @@ def scale_about(points, s, cx, cy):
     return [(cx + (x - cx) * s, cy + (y - cy) * s) for x, y in points]
 
 
-def map_poly(points, box):
-    xs = [p[0] for p in points]
-    ys = [p[1] for p in points]
-    sx = (box[2] - box[0]) / (max(xs) - min(xs))
-    sy = (box[3] - box[1]) / (max(ys) - min(ys))
-    return [(box[0] + (x - min(xs)) * sx, box[1] + (y - min(ys)) * sy)
-            for x, y in points]
-
-
-def simplify(points, eps):
-    ap = cv2.approxPolyDP(np.array(points, np.float32).reshape(-1, 1, 2),
-                          eps, True).reshape(-1, 2)
-    return [tuple(p) for p in ap]
-
-
 # --- build the payloads ----------------------------------------------------
 pin = os.environ.get("CONTOUR", "").strip()
 if pin:
@@ -285,7 +280,7 @@ print(f"  ink bbox x {min(xs)-STROKE/2:.2f}..{max(xs)+STROKE/2:.2f} "
 write("ring-64.json", subpaths(ring(poly64, STROKE / 2.0)))
 write("arrow-64.json", [arrow_sub(arrow())])
 
-# item icon: the same art at 0.875
+# item icon: the same art scaled down inside the planner frame
 p_inner = scale_about(poly64, INNER, CENTER, CENTER)
 write("ring-inner.json", subpaths(ring(p_inner, STROKE * INNER / 2.0)))
 write("arrow-inner.json", [arrow_sub(arrow(INNER))])
@@ -299,36 +294,9 @@ write("arrow-thumb.json",
       [arrow_sub([(TC + (x - CENTER) * THUMB, TC + (y - CENTER) * THUMB)
                   for x, y in arrow()])])
 
-# x24 shortcut: simplified silhouette on the 24 px grid
-simp24 = simplify(poly64, DP_EPS_24)
-poly24 = map_poly(simp24, BOX24)
-print(f"x24 silhouette: {len(simp24)} vertices")
-write("ring-24.json", subpaths(ring(poly24, 0.875)))
-write("arrow-24.json", [arrow_sub(small_arrow())])
-
-# x24 frame border: 1 px band, 4 on / 2 off, aligned to the pixel grid
-border = []
-for s in (0, 6, 12, 18):
-    border += [rect(s, 0, s + 4, 1), rect(s, 23, s + 4, 24),
-               rect(0, s, 1, s + 4), rect(23, s, 24, s + 4)]
-write("border-24.json", border)
-
-# x24-white: white badge with the block and the arrow knocked out
-outer = Polygon(poly24).buffer(0.875, join_style=2, mitre_limit=6.0)
-inner = Polygon(poly24).buffer(-0.875, join_style=2, mitre_limit=6.0)
-stencil = [rect(0, 0, 24, 24)]
-for g in getattr(outer, "geoms", [outer]):
-    for loop in [g.exterior] + list(g.interiors):
-        stencil.append({"closed": True, "op": "subtract",
-                        "knots": [[round(x, 3), round(y, 3)]
-                                  for x, y in list(loop.coords)[:-1]]})
-for g in getattr(inner, "geoms", [inner]):
-    for loop in [g.exterior] + list(g.interiors):
-        stencil.append({"closed": True, "op": "combine",
-                        "knots": [[round(x, 3), round(y, 3)]
-                                  for x, y in list(loop.coords)[:-1]]})
-stencil.append(arrow_sub(small_arrow(), "subtract"))
-write("stencil-24.json", stencil)
+# shortcut icons: abstract vanilla-style dashed square + arrow (no concrete)
+write("shortcut-64.json", dashed_square(64, 4, 10, 18) + [arrow_sub(arrow())])
+write("shortcut-24.json", dashed_square(24, 3, 6, 9) + [arrow_sub(small_arrow())])
 PY
 
 # ---------------------------------------------------------------------------
@@ -354,7 +322,7 @@ pc run "$PLANNER" \
     --cmd image.adjustments.levels --params "{\"inWhite\":$LEVELS_WHITE}" \
     --out "$SKETCH/frame.png"
 
-# 2c. item icon: frame + outline at 0.875
+# 2c. item icon: frame + outline at INNER_SCALE
 pc run "$SKETCH/frame.png" \
     --cmd path.set  --params "$(cat "$WORK_DIR/ring-inner.json")" \
     --cmd path.fill --params "$FILL" \
@@ -362,26 +330,25 @@ pc run "$SKETCH/frame.png" \
     --cmd path.fill --params "$FILL" \
     --out "$SKETCH/item.png"
 
-# 2d. x24 shortcut: green tile, dashed border, solid block outline, arrow
-pc run --new '{"width":24,"height":24,"background":"transparent","name":"x24"}' \
-    --cmd select.all \
-    --cmd edit.fill --params "{\"contents\":\"color\",\"color\":\"$GREEN_FILL\"}" \
-    --cmd select.deselect \
-    --cmd path.set  --params "$(cat "$WORK_DIR/border-24.json")" \
-    --cmd path.fill --params "{\"name\":\"work\",\"color\":\"$GREEN_EDGE\",\"antiAlias\":false}" \
-    --cmd path.set  --params "$(cat "$WORK_DIR/ring-24.json")" \
+# 2d. x64 shortcut: abstract dashed square + arrow, like the vanilla shortcut
+pc run --new '{"width":64,"height":64,"background":"transparent","name":"shortcut"}' \
+    --cmd path.set  --params "$(cat "$WORK_DIR/shortcut-64.json")" \
     --cmd path.fill --params "$FILL" \
-    --cmd path.set  --params "$(cat "$WORK_DIR/arrow-24.json")" \
-    --cmd path.fill --params "$FILL" \
-    --out "$SKETCH/x24.png"
+    --out "$SKETCH/shortcut64.png"
 
-# 2e. x24 disabled: white silhouette, block + arrow knocked out
-pc run --new '{"width":24,"height":24,"background":"transparent","name":"x24-white"}' \
-    --cmd path.set  --params "$(cat "$WORK_DIR/stencil-24.json")" \
+# 2e. x24 shortcut: same abstract glyph on the 24 px grid
+pc run --new '{"width":24,"height":24,"background":"transparent","name":"shortcut"}' \
+    --cmd path.set  --params "$(cat "$WORK_DIR/shortcut-24.json")" \
     --cmd path.fill --params "$FILL" \
-    --out "$SKETCH/x24-white.png"
+    --out "$SKETCH/shortcut24.png"
 
-# 2f. thumbnail: frame upscaled to 144 (nearest keeps the dashes crisp) + 1.5x art
+# 2f. x24 disabled: white line art
+pc run --new '{"width":24,"height":24,"background":"transparent","name":"shortcut-white"}' \
+    --cmd path.set  --params "$(cat "$WORK_DIR/shortcut-24.json")" \
+    --cmd path.fill --params '{"name":"work","color":"#ffffff","antiAlias":true}' \
+    --out "$SKETCH/shortcut24-white.png"
+
+# 2g. thumbnail: frame upscaled to 144 (nearest keeps the dashes crisp) + 1.5x art
 pc run "$PLANNER" \
     --cmd image.crop --params '{"x":0,"y":0,"width":64,"height":64,"targetWidth":144,"targetHeight":144,"resample":"nearest"}' \
     --cmd image.adjustments.levels --params "{\"inWhite\":$LEVELS_WHITE}" \
@@ -406,9 +373,9 @@ targets = [
     ("outline.png",   "graphics/icons/tile-upgrade-planner-outline.png"),
     ("frame.png",     "graphics/icons/tile-upgrade-planner-frame.png"),
     ("item.png",      "graphics/icons/tile-upgrade-planner-item.png"),
-    ("item.png",      "graphics/icons/shortcut-toolbar/tile-upgrade-planner-x64.png"),
-    ("x24.png",       "graphics/icons/shortcut-toolbar/tile-upgrade-planner-x24.png"),
-    ("x24-white.png", "graphics/icons/shortcut-toolbar/tile-upgrade-planner-x24-white.png"),
+    ("shortcut64.png", "graphics/icons/shortcut-toolbar/tile-upgrade-planner-x64.png"),
+    ("shortcut24.png", "graphics/icons/shortcut-toolbar/tile-upgrade-planner-x24.png"),
+    ("shortcut24-white.png", "graphics/icons/shortcut-toolbar/tile-upgrade-planner-x24-white.png"),
     ("thumbnail.png", "thumbnail.png"),
 ]
 for src, dst in targets:
